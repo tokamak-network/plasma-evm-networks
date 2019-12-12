@@ -1,8 +1,8 @@
 # Faraday Testnet
 
-Faraday testnet is running with Ropsten as Rootchain.
+Faraday testnet is running with Rinkeby as Rootchain.
 
-Plasma-evm(Develop) commit : [4e158e3213a4ba7d173b1bbca84ed48ffbf379c5](https://github.com/Onther-Tech/plasma-evm/tree/4e158e3213a4ba7d173b1bbca84ed48ffbf379c5)
+Plasma-evm(Develop) commit : [917ac4a04a595fe9535bf26a71211bd2daa1c021](https://github.com/Onther-Tech/plasma-evm/tree/917ac4a04a595fe9535bf26a71211bd2daa1c021)
 
 ## Faraday Components
 You can easily connect to API address, then sync.
@@ -16,5 +16,6 @@ You can easily connect to API address, then sync.
 ## Account & Contract
 There is Operator Account on Ropsten and Faraday testnet Chain.
 
-Operator : [0x6b5ce32848ccda00599c1d77f3aaf8b9266bb7cc](https://ropsten.etherscan.io/address/0x6b5ce32848ccda00599c1d77f3aaf8b9266bb7cc)
-RootChain Contract : [0xeB5bDC57Ff348548DB556FFb03B4FE2154349d96](https://ropsten.etherscan.io/address/0xeb5bdc57ff348548db556ffb03b4fe2154349d96)
+Operator : [0x35bFFD65a6FFcd9ecf3910AdCB1bD2101989eEC5](https://rinkeby.etherscan.io/address/0x35bFFD65a6FFcd9ecf3910AdCB1bD2101989eEC5)
+
+RootChain Contract : [0xef9e687255b20d714fbf0fe5082f53a05473d569](https://rinkeby.etherscan.io/address/0xef9e687255b20d714fbf0fe5082f53a05473d569)
