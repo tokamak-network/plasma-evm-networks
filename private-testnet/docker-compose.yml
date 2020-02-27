@@ -1,0 +1,69 @@
+version: "3.0"
+services:
+  rootchain:
+    image: onthertech/test-rootchain:latest
+    networks:
+      - plasma-private
+    restart: on-failure
+
+  plasma-operator:
+    image: onthertech/plasma-evm:latest
+    networks:
+        plasma-private:
+            ipv4_address: 172.20.0.10
+    ports:
+        - "0.0.0.0:30305:30305"
+    depends_on:
+        - rootchain
+    links:
+        - rootchain
+    volumes:
+        - shared_volume:/root/.ethereum/keystore
+    command:
+        - /bin/sh
+        - -c 
+        - |
+          apk add curl
+          rm -rf /root/.ethereum/keystore
+          mkdir -p /root/.ethereum/keystore
+          echo '{"address":"71562b71999873db5b286df957af199ec94617f7","crypto":{"cipher":"aes-128-ctr","ciphertext":"3f8cfd04655282802645f20bc7d4f993467142bed98fb1b28fc8a3f45131dbc0","cipherparams":{"iv":"6e4d75d4a74460668207607f0697d4da"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"1288630e7fd49d2d0e494cd4094a74c4feeb8defae22f8d9ab3290d7797bc946"},"mac":"d2e9db2b060c85e75c0b53db1a1474ac42ef35df97dd69c6643fd144ece58ad8"},"id":"d0d0acd5-5dfe-456e-804f-accad0945dad","version":3}' > /root/.ethereum/keystore/operator.json
+          echo '{"address":"3616be06d68dd22886505e9c2caaa9eca84564b8","crypto":{"cipher":"aes-128-ctr","ciphertext":"7d493491925f7a9332dcd80e5002e3bb51919bae4f0554de9864a27022ea1213","cipherparams":{"iv":"ebe38f19a89974dca63ae4b10be3b134"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"67437d4126ceb5927fe3355f82a769f38c052f9827e55e431c19eeb1d173b4f6"},"mac":"a9ff46385c2b08c14502fe9dce6c96a14f610f695ec0675dd63bae643401b176"},"id":"865d6f5a-496d-478d-9d26-0d6e5a7efc52","version":3}' > /root/.ethereum/keystore/challenger.json
+          echo '' > /root/.ethereum/signer.pass
+          curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":67}' -H 'Content-Type: application/json' --retry 100 --retry-delay 3 --retry-connrefused  http://rootchain:8545
+          geth --rootchain.url ws://rootchain:8546 --operator.key b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291 deploy "genesis.json" 16 true 8
+          geth --cache 512 --rootchain.url ws://rootchain:8546 init ./genesis.json
+          cp ./genesis.json /root/.ethereum/keystore/
+          geth --syncmode='full' --networkid 16 --rootchain.url 'ws://rootchain:8546' --operator '0x71562b71999873DB5b286dF957af199Ec94617F7' --rootchain.challenger '0x3616BE06D68dD22886505e9c2CaAa9EcA84564b8' --cache 512 --port 30305 --maxpeers 50  --bootnodes 'enode://e1571c972609575b6e57cb807afbe0bc5a3a0e33864a477734dbe7af5a8951ceb6fd4d5fb0ade61866ebeed575719d6a851ee6c353c0f90434b61b7f4d278492@172.20.0.20:30305' --unlock '0x71562b71999873DB5b286dF957af199Ec94617F7,0x3616BE06D68dD22886505e9c2CaAa9EcA84564b8' --password /root/.ethereum/signer.pass --mine --miner.gastarget 7500000 --miner.gaslimit 10000000 --miner.gasprice 1000000000
+
+  plasma-bootnode:
+    image: onthertech/plasma-evm:latest
+    ports:
+        - "0.0.0.0:8547:8545"
+        - "0.0.0.0:8548:8546"
+    networks:
+        plasma-private:
+            ipv4_address: 172.20.0.20
+    links:
+        - rootchain:rootchain
+    volumes:
+        - shared_volume:/root/.ethereum/keystore
+    tty: true
+    command:
+        - /bin/sh
+        - -c 
+        - |
+          apk add curl
+          curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":67}' -H 'Content-Type: application/json' --retry 100 --retry-delay 3 --retry-connrefused  http://rootchain:8545
+          while [ ! -f "/root/.ethereum/keystore/genesis.json" ]; do echo "Waiting for generating genesis.json" && sleep 5; done
+          geth --cache 512 --rootchain.url ws://rootchain:8546 init /root/.ethereum/keystore/genesis.json
+          geth --syncmode="full" --networkid 16  --rootchain.url 'ws://rootchain:8546' --rpc --rpcaddr '0.0.0.0' --rpcport 8545 --rpcapi 'eth,net,debug' --rpccorsdomain '*' --rpcvhosts '*' --ws --wsorigins '*' --wsaddr '0.0.0.0' --wsport 8546 --wsapi 'debug,eth,net,txpool,web3' --cache 512 --nodekeyhex 'ad4b200ec443c8c79d58d69c94e23ef8f7cfab64fbe7a16d7b0748292adccffc' --port 30305 --maxpeers 512 --lightpeers=256 --lightserv=50 --miner.gastarget 0 --miner.gaslimit 0 --miner.gasprice 0 
+    
+networks:
+    plasma-private:
+        ipam:
+            driver: default
+            config:
+              - subnet: "172.20.0.0/24"
+
+volumes: 
+    shared_volume:
